@@ -1,2 +1,2 @@
 # Norns-Studies
- Norns Shield Study Project
+ Norns Shield Studies
