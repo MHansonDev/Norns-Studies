@@ -112,6 +112,8 @@ function enc(n,d)
     level = util.clamp(level+d/100,0,2)
     softcut.level(1,level)
   elseif n==2 then
+    -- This encoder controls the position of Softcut channel 1.
+    -- It seems to work well with files greater than 2 minutes, but otherwise isn't stable.
     pos = util.clamp(position + (pos + d), 0, 48000)
     softcut.position(1,pos)
   elseif n==3 then
