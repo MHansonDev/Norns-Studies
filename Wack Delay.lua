@@ -21,8 +21,8 @@ local lfo_progress = {}
 local lfo_values = {}
 
 local specs = {}
-specs.TIME_L = ControlSpec.new(LFO_MIN_TIME, LFO_MAX_TIME, "exp", 0, 4, "s")
-specs.TIME_R = ControlSpec.new(LFO_MIN_TIME, LFO_MAX_TIME, "exp", 0, 8, "s")
+specs.TIME_L = ControlSpec.new(LFO_MIN_TIME, LFO_MAX_TIME, "exp", 0, 1, "s")
+specs.TIME_R = ControlSpec.new(LFO_MIN_TIME, LFO_MAX_TIME, "exp", 0, 2, "s")
 
 local function reset_phase()
   for i = 1, NUM_LFOS do
@@ -46,9 +46,11 @@ local function lfo_update()
       screen_dirty = true
     end
     
-    softcut.rate(1, (lfo_values[1] * 0.008) - 1)
+    --print((lfo_values[1] * 0.008))
+    softcut.rate(1, 40 + (lfo_values[1] * 0.008) - 1)
     if lfo_values[2] then
-      softcut.pan(2, (lfo_values[2] * 0.015) - 1);
+      --print((lfo_values[2] * 0.015) - 1)
+      softcut.rate(2, 40+ (lfo_values[2] * 0.015) - 1);
     end
   end
 end
@@ -149,7 +151,7 @@ function init()
   
   -- Voice 2
   softcut.level(2,1.0)
-  softcut.level_input_cut(2, 2, 1)
+  softcut.level_input_cut(1, 2, 1)
   
   softcut.play(2, 1)
   softcut.pan(2, 1)

@@ -64,27 +64,6 @@ local function screen_update()
     end
 end
 
-function midi_to_hz(note)
-    local hz = (440 / 32) * (2 ^ ((note - 9) / 12))
-    return hz
-end
-
-m.event = function(data)
-    local d = midi.to_msg(data)
-    if d.type == "note_on" then
-        engine.amp(d.vel / 127)
-        engine.hz(midi_to_hz(d.note))
-        -- softcut.rec_level(1, d.note * 0.03)
-    end
-    if d.type == "cc" then
-        print("cc " .. d.cc .. " = " .. d.val)
-        if (d.cc == 0) then
-            engine.cutoff(d.val * 50)
-        end
-
-    end
-end
-
 function init()
     params:add_separator()
 
@@ -138,9 +117,6 @@ function init()
         end
     }
 
-    engine.release(1)
-    engine.pw(0.5)
-    engine.cutoff(7000)
     audio.rev_on()
     audio.level_monitor_rev(0.3)
 
@@ -174,7 +150,7 @@ function init()
 
     -- Voice 2
     softcut.level(2, 1.0)
-    softcut.level_input_cut(1, 2, 1)
+    softcut.level_input_cut(2, 2, 1)
 
     softcut.play(2, 1)
     softcut.pan(2, 1)
