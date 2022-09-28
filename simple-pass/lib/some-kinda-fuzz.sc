@@ -1,4 +1,4 @@
-Engine_Simp : CroneEngine {
+Engine_Fuzz : CroneEngine {
 
 	var amp=0;
 	var <synth;
@@ -22,12 +22,12 @@ Engine_Simp : CroneEngine {
 			
 				var source = SinOsc.ar(550, 0, 0.1);
 			  //var shifted = Ringz.ar(sound, windowSize, pitchRatio, pitchDispertion, timeDispertion);
-			  //var shifted = CrossoverDistortion.ar(sound, 0.5, pitchRatio, 0.5, 0);
+			  var shifted = CrossoverDistortion.ar(sound, 0.5, pitchRatio, 0.5, 0);
 			  var decimated = Decimator.ar(sound, 44100, pitchRatio, 1, 0);
 			  //LocalOut.ar(shifted * 9);
 				//LocalOut.ar(sound * 2.5);
 			
-			Out.ar(out, decimated * amp);
+			Out.ar(out, shifted * amp);
 		}).add;
 
 		context.server.sync;

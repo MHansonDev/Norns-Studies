@@ -1,12 +1,17 @@
--- LFO Delay Study
--- LFO values effect Pan & Rate params
-engine.name = 'Simp'
-local Formatters = require "formatters"
+-- study 4
+-- MIDI keyboard input
 local ControlSpec = require "controlspec"
+local MollyThePoly = require "molly_the_poly/lib/molly_the_poly_engine"
+local Formatters = require "formatters"
+
+
+engine.name = "PolyPerc"
+
+m = midi.connect()
 
 rate = 1.0
-rec = 0.44
-pre = 0.5
+rec = 1.0
+pre = 0.00
 
 local SCREEN_FRAMERATE = 15
 local screen_dirty = true
@@ -22,8 +27,8 @@ local lfo_progress = {}
 local lfo_values = {}
 
 local specs = {}
-specs.TIME_L = ControlSpec.new(LFO_MIN_TIME, LFO_MAX_TIME, "exp", 0, 2, "s")
-specs.TIME_R = ControlSpec.new(LFO_MIN_TIME, LFO_MAX_TIME, "exp", 0, 6, "s")
+specs.TIME_L = ControlSpec.new(LFO_MIN_TIME, LFO_MAX_TIME, "exp", 0, 4, "s")
+specs.TIME_R = ControlSpec.new(LFO_MIN_TIME, LFO_MAX_TIME, "exp", 0, 8, "s")
 
 local function reset_phase()
   for i = 1, NUM_LFOS do
@@ -44,14 +49,13 @@ local function lfo_update()
     local value = util.round(util.linlin(-1, 1, 0, LFO_RESOLUTION - 1, math.sin(lfo_progress[i])))
     if value ~= lfo_values[i] then
       lfo_values[i] = value
+      --midi_out_device:cc(i - 1 + params:get("midi_cc_start"), value, midi_out_channel)
       screen_dirty = true
     end
     
-    softcut.pan(1, lfo_values[1] * 0.01)
-    softcut.rate(1, 44 + (lfo_values[1] * 0.002))
-    if lfo_values[2] then
-      softcut.pan(2, lfo_values[2] * -0.01);
-      softcut.rate(2, 32 + (lfo_values[2] * -0.003))
+    if i == 1 then
+      softcut.position(1, lfo_values[1] * 0.01)
+      softcut.filter_bp(2, (lfo_values[1] * 0.025));
     end
   end
 end
@@ -63,6 +67,26 @@ local function screen_update()
   end
 end
 
+function midi_to_hz(note)
+  local hz = (440 / 32) * (2 ^ ((note - 9) / 12))
+  return hz
+end
+
+m.event = function(data)
+  local d = midi.to_msg(data)
+  if d.type == "note_on" then
+    engine.amp(d.vel / 127)
+    engine.hz(midi_to_hz(d.note))
+    --softcut.rec_level(1, d.note * 0.03)
+  end
+  if d.type == "cc" then
+    print("cc " .. d.cc .. " = " .. d.val)
+    if (d.cc == 0) then
+      engine.cutoff(d.val * 50)
+    end
+
+  end
+end
 
 function init()
   params:add_separator()
@@ -118,6 +142,9 @@ function init()
   }
   
 
+  engine.release(1)
+  engine.pw(0.5)
+  engine.cutoff(7000)
   audio.rev_on()
   audio.level_monitor_rev(0.3)
 
@@ -139,7 +166,7 @@ function init()
   softcut.fade_time(1, 32)
   softcut.rec(1, 1)
   softcut.rec_level(1, 0.3)
-  softcut.pre_level(1, 0.3) --[[ 0_0 ]]--
+  softcut.pre_level(1, 0.4) --[[ 0_0 ]]--
   softcut.position(1, 0)
   softcut.enable(1, 1)
   
@@ -152,7 +179,7 @@ function init()
   
   -- Voice 2
   softcut.level(2,1.0)
-  softcut.level_input_cut(2, 2, 1)
+  softcut.level_input_cut(1, 2, 1)
   
   softcut.play(2, 1)
   softcut.pan(2, 1)
@@ -174,13 +201,7 @@ function init()
   softcut.filter_fc(2, 3000);
   softcut.filter_rq(2, 1.0);
 
-  params:add_control("amp", "amp", controlspec.new(0.00, 10, "lin", 0.1, 1, 'amp'))
-  params:set_action("amp", function(v) engine.amp(v) end)
-  params:add_control("pitchRatio", "pitchRatio", controlspec.new(1, 30, 'lin', 0.1, 30, 'bits'))
-  params:set_action("pitchRatio", function(v)
-    print(v)
-    engine.pitchRatio(v)
-  end)
+
   
   reset_phase()
   update_freqs()
@@ -192,13 +213,11 @@ end
 
 function enc(n,d)
   if n==1 then
-    print('pre: ' .. rate)
     rate = util.clamp(rate+d/100,-4,4)
     softcut.rate(1, (44 * rate));
     softcut.rate(2, (32 * rate));
     print(rate);
   elseif n==2 then
-    print('pre rec: ' .. rate)
     rec = util.clamp(rec+d/100,0,1)
     softcut.rec_level(1,rec);
     softcut.rec_level(2, rec);

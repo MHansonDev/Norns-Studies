@@ -1,16 +1,22 @@
--- LFO Delay Study
--- LFO values effect Pan & Rate params
-local Formatters = require "formatters"
-local ControlSpec = require "controlspec"
+-- Changes
+-- 1.0.0 @markeats
+-- llllllll.co/t/changes
+--
+-- Eight connected sine wave
+-- LFOs over MIDI.
+--
+-- E2 : Left time
+-- E3 : Right time
+-- K2 : Reset phase
+--
 
-rate = 1.0
-rec = 0.44
-pre = 0.5
+local ControlSpec = require "controlspec"
+local Formatters = require "formatters"
 
 local SCREEN_FRAMERATE = 15
 local screen_dirty = true
 
-local NUM_LFOS = 2
+local NUM_LFOS = 8
 local LFO_MIN_TIME = 1 -- Secs
 local LFO_MAX_TIME = 60 * 60 * 24
 local LFO_UPDATE_FREQ = 128
@@ -20,9 +26,13 @@ local lfo_freqs = {}
 local lfo_progress = {}
 local lfo_values = {}
 
+local midi_out_device
+local midi_out_channel
+
+
 local specs = {}
-specs.TIME_L = ControlSpec.new(LFO_MIN_TIME, LFO_MAX_TIME, "exp", 0, 1, "s")
-specs.TIME_R = ControlSpec.new(LFO_MIN_TIME, LFO_MAX_TIME, "exp", 0, 2, "s")
+specs.TIME_L = ControlSpec.new(LFO_MIN_TIME, LFO_MAX_TIME, "exp", 0, 4, "s")
+specs.TIME_R = ControlSpec.new(LFO_MIN_TIME, LFO_MAX_TIME, "exp", 0, 300, "s")
 
 local function reset_phase()
   for i = 1, NUM_LFOS do
@@ -36,6 +46,9 @@ local function update_freqs()
   end
 end
 
+
+-- Metro callbacks
+
 local function lfo_update()
   local delta = (1 / LFO_UPDATE_FREQ) * 2 * math.pi
   for i = 1, NUM_LFOS do
@@ -43,14 +56,8 @@ local function lfo_update()
     local value = util.round(util.linlin(-1, 1, 0, LFO_RESOLUTION - 1, math.sin(lfo_progress[i])))
     if value ~= lfo_values[i] then
       lfo_values[i] = value
+      midi_out_device:cc(i - 1 + params:get("midi_cc_start"), value, midi_out_channel)
       screen_dirty = true
-    end
-    
-    --print((lfo_values[1] * 0.008))
-    softcut.rate(1, 40 + (lfo_values[1] * 0.008) - 1)
-    if lfo_values[2] then
-      --print((lfo_values[2] * 0.015) - 1)
-      softcut.rate(2, 40+ (lfo_values[2] * 0.015) - 1);
     end
   end
 end
@@ -63,8 +70,43 @@ local function screen_update()
 end
 
 
+-- Encoder input
+function enc(n, delta)
+  if n == 2 then
+    params:delta("time_l", delta * 0.1)
+  elseif n == 3 then
+    params:delta("time_r", delta * 0.1)
+  end
+end
+
+-- Key input
+function key(n, z)
+  if z == 1 then
+    if n == 2 then
+      reset_phase()
+    end
+  end
+end
+
+
 function init()
+  midi_out_device = midi.connect(1)
+
+  -- Add params
+  
   params:add_separator()
+
+  params:add {
+    type = "number",
+    id = "midi_out_device",
+    name = "MIDI Out Device",
+    min = 1,
+    max = 4,
+    default = 1,
+    action = function(value)
+      midi_out_device = midi.connect(value)
+    end
+  }
 
   params:add {
     type = "number",
@@ -115,106 +157,18 @@ function init()
       screen_dirty = true
     end
   }
-  
 
-  audio.rev_on()
-  audio.level_monitor_rev(0.3)
+  midi_out_channel = params:get("midi_out_channel")
 
-  audio.level_cut(1.0)
-  audio.level_adc_cut(1)
-  audio.level_eng_cut(1)
-  
-  
-  -- Voice 1
-  softcut.level(1,1.0)
-  softcut.level_input_cut(1, 1, 1)
-
-  softcut.play(1, 1)
-  softcut.pan(1, -1)
-  softcut.rate(1, 44)
-  softcut.loop_start(1, 0)
-  softcut.loop_end(1, 1)
-  softcut.loop(1, 1)
-  softcut.fade_time(1, 32)
-  softcut.rec(1, 1)
-  softcut.rec_level(1, 0.3)
-  softcut.pre_level(1, 0.4) --[[ 0_0 ]]--
-  softcut.position(1, 0)
-  softcut.enable(1, 1)
-  
-  softcut.filter_dry(1, 0);
-  softcut.filter_lp(1, 1.0);
-  softcut.filter_bp(1, 1.0);
-  softcut.filter_hp(1, 1.0);
-  softcut.filter_fc(1, 3000);
-  softcut.filter_rq(1, 1.0);
-  
-  -- Voice 2
-  softcut.level(2,1.0)
-  softcut.level_input_cut(1, 2, 1)
-  
-  softcut.play(2, 1)
-  softcut.pan(2, 1)
-  softcut.rate(2, 32)
-  softcut.loop_start(2, 0)
-  softcut.loop_end(2, 1)
-  softcut.loop(2, 1)
-  softcut.fade_time(2, 32)
-  softcut.rec(2, 1)
-  softcut.rec_level(2, 0.3)
-  softcut.pre_level(2, 0.4) --[[ 0_0 ]]--
-  softcut.position(2, 0)
-  softcut.enable(2, 1)
-  
-  softcut.filter_dry(2, 0);
-  softcut.filter_lp(2, 1.0);
-  softcut.filter_bp(2, 1.0);
-  softcut.filter_hp(2, 1.0);
-  softcut.filter_fc(2, 3000);
-  softcut.filter_rq(2, 1.0);
-
-
-  
   reset_phase()
   update_freqs()
   lfo_update()
   
   metro.init(lfo_update, 1 / LFO_UPDATE_FREQ):start()
   metro.init(screen_update, 1 / SCREEN_FRAMERATE):start()
+
 end
 
-function enc(n,d)
-  if n==1 then
-    print('pre: ' .. rate)
-    rate = util.clamp(rate+d/100,-4,4)
-    softcut.rate(1, (44 * rate));
-    softcut.rate(2, (32 * rate));
-    print(rate);
-  elseif n==2 then
-    print('pre rec: ' .. rate)
-    rec = util.clamp(rec+d/100,0,1)
-    softcut.rec_level(1,rec);
-    softcut.rec_level(2, rec);
-    print(rec);
-  elseif n==3 then
-    pre = util.clamp(pre+d/100,0,1)
-    softcut.pre_level(1,pre);
-    softcut.pre_level(2, pre);
-    print(pre);
-  end
-  redraw()
-end
-
-function key(n,z)
-  if n==2 and z==1 then
-    if rec==0 then rec = 1 else rec = 0 end
-    softcut.rec_level(1,rec)
-  elseif n==3 and z==1 then
-    if pre==1 then pre = 0 else pre = 1 end
-    softcut.pre_level(1,pre)
-  end
-  redraw()
-end
 
 function redraw()
   screen.clear()
@@ -249,20 +203,6 @@ function redraw()
   screen.move(128 - MARGIN_H, 64 - 5)
   screen.text_right(params:string("time_r") .. " \u{25B6}")
   screen.fill()
-  
-  screen.move(20,20)
-  screen.text("rate: ")
-  screen.move(100,20)
-  screen.text_right(string.format("%.2f",rate))
-  screen.move(20,30)
-  screen.text("rec: ")
-  screen.move(100,30)
-  screen.text_right(string.format("%.2f",rec))
-  screen.move(20,40)
-  screen.text("pre: ")
-  screen.move(100,40)
-  screen.text_right(string.format("%.2f",pre))
 
   screen.update()
-
 end

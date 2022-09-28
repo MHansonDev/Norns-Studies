@@ -1,4 +1,4 @@
-Engine_PitchShift : CroneEngine {
+Engine_Simp : CroneEngine {
 
 	var amp=0;
 	var <synth;

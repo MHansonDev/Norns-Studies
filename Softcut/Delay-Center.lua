@@ -26,7 +26,7 @@ function init()
   softcut.fade_time(1, 32)
   softcut.rec(1, 1)
   softcut.rec_level(1, 0.3)
-  softcut.pre_level(1, 0.4)
+  softcut.pre_level(1, 0.4) --[[ 0_0 ]]--
   softcut.position(1, 0)
   softcut.enable(1, 1)
   
@@ -50,7 +50,7 @@ function init()
   softcut.fade_time(2, 32)
   softcut.rec(2, 1)
   softcut.rec_level(2, 0.3)
-  softcut.pre_level(2, 0.4)
+  softcut.pre_level(2, 0.4) --[[ 0_0 ]]--
   softcut.position(2, 0)
   softcut.enable(2, 1)
   

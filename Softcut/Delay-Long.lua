@@ -42,7 +42,7 @@ function init()
   
   -- Voice 2
   softcut.level(2,1.0)
-  softcut.level_input_cut(2, 2, 1)
+  softcut.level_input_cut(1, 2, 1)
   
   softcut.play(2, 1)
   softcut.pan(2, 1)

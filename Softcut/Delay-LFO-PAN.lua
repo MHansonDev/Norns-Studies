@@ -46,12 +46,11 @@ local function lfo_update()
       screen_dirty = true
     end
     
-    --print((lfo_values[1]))
-    softcut.pan(1, (lfo_values[1] * 0.01) - 1)
-    --softcut.level_input_cut(1, 1, 1 + (lfo_values[1] * 0.01))
+    softcut.pan(1, lfo_values[1] * 0.01)
+    softcut.rate(1, 44 + (lfo_values[1] * 0.002))
     if lfo_values[2] then
-      softcut.pan(2, (lfo_values[2] * -0.01) - 1);
-      --softcut.level_input_cut(2, 2, 1 + (lfo_values[2] * 0.01))
+      softcut.pan(2, lfo_values[2] * -0.01);
+      softcut.rate(2, 32 + (lfo_values[2] * -0.003))
     end
   end
 end

@@ -48,7 +48,7 @@ function reset()
     softcut.position(i,1)
     softcut.rate(i,1.0)
     softcut.play(1,1)
-    softcut.fade_time(1,0)
+    softcut.fade_time(1,0.1)
   end
   update_content(1,1,length,128)
 end

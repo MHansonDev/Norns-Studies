@@ -1,6 +1,6 @@
 -- LFO Delay Study
 -- LFO values effect Pan & Rate params
-engine.name = 'PitchShift'
+engine.name = 'Distroyer'
 local Formatters = require "formatters"
 local ControlSpec = require "controlspec"
 
@@ -51,7 +51,8 @@ local function lfo_update()
     softcut.rate(1, 44 + (lfo_values[1] * 0.002))
     if lfo_values[2] then
       softcut.pan(2, lfo_values[2] * -0.01);
-      softcut.rate(2, 32 + (lfo_values[2] * -0.003))
+      --softcut.rate(2, 32 + (lfo_values[2] * -0.003))
+      --engine.smooth(lfo_values[2] * 0.01)
     end
   end
 end
@@ -119,9 +120,11 @@ function init()
   
 
   audio.rev_on()
-  audio.level_monitor_rev(0.3)
+  --audio.level_monitor(0)
+  --audio.level_eng_cut(0)
+  audio.rev_off()
 
-  audio.level_cut(1.0)
+  audio.level_cut(1)
   audio.level_adc_cut(1)
   audio.level_eng_cut(1)
   
@@ -174,13 +177,20 @@ function init()
   softcut.filter_fc(2, 3000);
   softcut.filter_rq(2, 1.0);
 
-  params:add_control("amp", "amp", controlspec.new(0.00, 10, "lin", 0.1, 1, 'amp'))
+  params:add_control("amp", "amp", controlspec.new(0.00, 10, "lin", 0.1, 0.5, 'amp'))
   params:set_action("amp", function(v) engine.amp(v) end)
-  params:add_control("pitchRatio", "pitchRatio", controlspec.new(1, 4, 'lin', 0.1, 0, 'bits'))
-  params:set_action("pitchRatio", function(v)
-    print(v)
-    engine.pitchRatio(v)
-  end)
+  
+  params:add_control("rate", "rate", controlspec.new(1, 44100, "exp", 1, 751, 'rate'))
+  params:set_action("rate", function(v) engine.rate(v) end)
+  
+  params:add_control("smooth", "smooth", controlspec.new(0, 2, 'lin', 0.01, 0.24, 'smooth'))
+  params:set_action("smooth", function(v) engine.smooth(v) end)
+  
+  params:add_control("mult", "mult", controlspec.new(0, 2, 'lin', 0.01, 1, 'mult'))
+  params:set_action("mult", function(v) engine.mult(v) end)
+  
+  params:add_control("add", "add", controlspec.new(0, 2, 'lin', 0.01, 0, 'add'))
+  params:set_action("add", function(v) engine.add(v) end)
   
   reset_phase()
   update_freqs()
