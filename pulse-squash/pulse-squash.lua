@@ -1,4 +1,4 @@
-engine.name = 'SCStudies'
+engine.name = 'PulseSquash'
 local UI = require "ui"
 
 amp = 0.5

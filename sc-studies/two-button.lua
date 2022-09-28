@@ -1,23 +1,12 @@
-engine.name = 'SCStudies'
+engine.name = 'TwoButton'
 local UI = require "ui"
 
-amp = 0.5
 ticks = 0
-sweep = 0.5
 release = 1.65
-resonance = 2
-division = 2
 
 function init()
   
-  ampDial = UI.Dial.new(9, 1, 22, 0.5, 0.1, 10)
-  releaseDial = UI.Dial.new(40, 1, 22, 1.65, 0.1, 4)
-  divisionDial = UI.Dial.new(70, 1, 22, 2, 0.1, 10)
-  
-  counter = metro.init()
-  counter.time = 1 / division
-  counter.event = count
-  counter:start()
+  releaseDial = UI.Dial.new(9, 1, 22, 0.5, 0.1, 4)
   
   params:add_control("amp", "amp", controlspec.new(0.00, 3, "lin", 0.01, 0.5, 'amp'))
   params:set_action("amp", function(v) engine.amp(v) end)
@@ -25,20 +14,17 @@ function init()
   params:add_control("ampHz", "ampHz", controlspec.new(0.00, 6, "lin", 0.1, 4, 'ampHz'))
   params:set_action("ampHz", function(v) engine.ampHz(v) end)
   
-  params:add_control("resonance", "resonance", controlspec.new(0.00, 10, "lin", 0.1, 2, 'resonance'))
-  params:set_action("resonance", function(v) engine.resonance(v); resonance = v; end)
+  params:add_control("fund", "fund", controlspec.new(0.00, 80, "lin", 1, 40, 'fund'))
+  params:set_action("fund", function(v) engine.fund(v) end)
   
   params:add_control("maxPartial", "maxPartial", controlspec.new(0.00, 8, "lin", 0.1, 4, 'maxPartial'))
   params:set_action("maxPartial", function(v) engine.maxPartial(v) end)
   
-  params:add_control("sweep", "sweep", controlspec.new(0.00, 4, "lin", 0.1, 0.5, 'sweep'))
-  params:set_action("sweep", function(v) engine.sweep(v); sweep = v; end)
-  
-  params:add_control("division", "division", controlspec.new(-100, 100, "lin", 1, 2, 'division'))
-  params:set_action("division", function(v) division = v; counter.time = 1 / division; end)
+  params:add_control("width", "width", controlspec.new(0.00, 4, "lin", 0.1, 0.5, 'fund'))
+  params:set_action("width", function(v) engine.width(v) end)
   
   audio.level_cut(1.0)
-  audio.level_adc_cut(0)
+  audio.level_adc_cut(1)
   audio.level_eng_cut(1)
   
   
@@ -57,7 +43,7 @@ function init()
   softcut.rec_level(1, 0.3)
   softcut.pre_level(1, 0.3) --[[ 0_0 ]]--
   softcut.position(1, 0)
-  softcut.enable(1, 1)
+  softcut.enable(1, 0)
   
   softcut.filter_dry(1, 0);
   softcut.filter_lp(1, 1.0);
@@ -81,7 +67,7 @@ function init()
   softcut.rec_level(2, 0.3)
   softcut.pre_level(2, 0.4) --[[ 0_0 ]]--
   softcut.position(2, 0)
-  softcut.enable(2, 1)
+  softcut.enable(2, 0)
   
   softcut.filter_dry(2, 0);
   softcut.filter_lp(2, 1.0);
@@ -90,11 +76,7 @@ function init()
   softcut.filter_fc(2, 3000);
   softcut.filter_rq(2, 1.0);
 
-end
-
-function count(stage)
-  engine.hz(sweep, amp, release, resonance)
-  --redraw()
+  
 end
 
 function key(n,z)
@@ -107,14 +89,7 @@ function key(n,z)
 end
 
 function enc(n, delta)
-  if n == 1 then
-    divisionDial:set_value_delta(delta * 0.05)
-    division = divisionDial.value
-    counter.time = 1 / division
-  elseif n == 2 then
-    ampDial:set_value_delta(delta * 0.05)
-    amp = ampDial.value
-  elseif n == 3 then
+  if n == 2 then
     releaseDial:set_value_delta(delta * 0.05)
     release = releaseDial.value
   end
@@ -125,8 +100,6 @@ function redraw()
   screen.clear()
   screen.fill()
   
-  divisionDial:redraw()
-  ampDial:redraw()
   releaseDial:redraw()
   screen.pixel(10, 50);
   screen.text('Press Either Button')
