@@ -2,7 +2,7 @@ engine.name = 'TwoButton2'
 local UI = require "ui"
 
 ticks = 0
-release = 1.65
+release = 0.65
 
 function init()
   
@@ -81,10 +81,12 @@ end
 
 function key(n,z)
   print(n .. ' ' .. z)
-  if n == 2 then
-    engine.hz(25, 1.5, release)
-  elseif n == 3 then
-    engine.hz(23, 1.5, release)
+  if z == 1 then
+    if n == 2 then
+      engine.hz(1, release)
+    elseif n == 3 then
+      engine.hz(3, release)
+    end
   end
 end
 
