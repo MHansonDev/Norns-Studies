@@ -1,12 +1,14 @@
-engine.name = 'TwoButton2'
+engine.name = 'MidiSaw'
 local UI = require "ui"
+local tab = require "tabutil"
 
-ticks = 0
 release = 0.65
+m = midi.connect()
+lastFreq = '';
 
 function init()
   
-  releaseDial = UI.Dial.new(9, 1, 22, 0.5, 0.1, 4)
+  releaseDial = UI.Dial.new(9, 20, 22, 0.5, 0.1, 4)
   
   params:add_control("amp", "amp", controlspec.new(0.00, 3, "lin", 0.01, 0.5, 'amp'))
   params:set_action("amp", function(v) engine.amp(v) end)
@@ -83,9 +85,7 @@ function key(n,z)
   print(n .. ' ' .. z)
   if z == 1 then
     if n == 2 then
-      engine.hz(1, release)
     elseif n == 3 then
-      engine.hz(3, release)
     end
   end
 end
@@ -98,13 +98,35 @@ function enc(n, delta)
   redraw()
 end
 
+function midi_to_hz(note)
+  local hz = (440 / 32) * (2 ^ ((note - 9) / 12))
+  return hz
+end
+
+m.event = function(data)
+  local d = midi.to_msg(data)
+  if d.type == "note_on" then
+    engine.hz(midi_to_hz(d.note), release)
+    lastFreq = midi_to_hz(d.note)
+  end
+  if d.type == "cc" then
+    print("cc " .. d.cc .. " = " .. d.val)
+    if (d.cc == 0) then
+      engine.cutoff(d.val * 50)
+    end
+  end
+  redraw()
+end
+
 function redraw()
   screen.clear()
   screen.fill()
   
   releaseDial:redraw()
-  screen.pixel(10, 50);
-  screen.text('Press Either Button')
+  screen.move(5, 10);
+  screen.text('Release')
+  screen.move(50, 30)
+  screen.text(lastFreq);
   screen.update();
 end
 
