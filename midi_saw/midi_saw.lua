@@ -2,28 +2,17 @@ engine.name = 'MidiSaw'
 local UI = require "ui"
 local tab = require "tabutil"
 
-release = 0.65
+release = 1
 m = midi.connect()
-lastFreq = '';
+lastFreq = ''
+sawAmp = 1
+sinAmp = 1
 
 function init()
   
-  releaseDial = UI.Dial.new(9, 20, 22, 0.5, 0.1, 4)
-  
-  params:add_control("amp", "amp", controlspec.new(0.00, 3, "lin", 0.01, 0.5, 'amp'))
-  params:set_action("amp", function(v) engine.amp(v) end)
-  
-  params:add_control("ampHz", "ampHz", controlspec.new(0.00, 6, "lin", 0.1, 4, 'ampHz'))
-  params:set_action("ampHz", function(v) engine.ampHz(v) end)
-  
-  params:add_control("fund", "fund", controlspec.new(0.00, 80, "lin", 1, 40, 'fund'))
-  params:set_action("fund", function(v) engine.fund(v) end)
-  
-  params:add_control("maxPartial", "maxPartial", controlspec.new(0.00, 8, "lin", 0.1, 4, 'maxPartial'))
-  params:set_action("maxPartial", function(v) engine.maxPartial(v) end)
-  
-  params:add_control("width", "width", controlspec.new(0.00, 4, "lin", 0.1, 0.5, 'fund'))
-  params:set_action("width", function(v) engine.width(v) end)
+  releaseDial = UI.Dial.new(9, 20, 22, 0.5, 0, 4)
+  sawAmpDial = UI.Dial.new(44, 20, 22, 0.5, 0, 2)
+  sinAmpDial = UI.Dial.new(79, 20, 22, 0.5, 0, 2)
   
   audio.level_cut(1.0)
   audio.level_adc_cut(1)
@@ -45,7 +34,7 @@ function init()
   softcut.rec_level(1, 0.3)
   softcut.pre_level(1, 0.3) --[[ 0_0 ]]--
   softcut.position(1, 0)
-  softcut.enable(1, 0)
+  softcut.enable(1, 1)
   
   softcut.filter_dry(1, 0);
   softcut.filter_lp(1, 1.0);
@@ -69,7 +58,7 @@ function init()
   softcut.rec_level(2, 0.3)
   softcut.pre_level(2, 0.4) --[[ 0_0 ]]--
   softcut.position(2, 0)
-  softcut.enable(2, 0)
+  softcut.enable(2, 1)
   
   softcut.filter_dry(2, 0);
   softcut.filter_lp(2, 1.0);
@@ -91,9 +80,16 @@ function key(n,z)
 end
 
 function enc(n, delta)
-  if n == 2 then
+  if n == 1 then
     releaseDial:set_value_delta(delta * 0.05)
     release = releaseDial.value
+  elseif n == 2 then
+    sawAmpDial:set_value_delta(delta * 0.05)
+    sawAmp = sawAmpDial.value
+  elseif n == 3 then
+    sinAmpDial:set_value_delta(delta * 0.05)
+    sinAmp = sinAmpDial.value
+    print(sinAmp)
   end
   redraw()
 end
@@ -106,7 +102,7 @@ end
 m.event = function(data)
   local d = midi.to_msg(data)
   if d.type == "note_on" then
-    engine.hz(midi_to_hz(d.note), release)
+    engine.hz(midi_to_hz(d.note), release, sawAmp * 0.1, sinAmp)
     lastFreq = midi_to_hz(d.note)
   end
   if d.type == "cc" then
@@ -123,10 +119,19 @@ function redraw()
   screen.fill()
   
   releaseDial:redraw()
+  sawAmpDial:redraw()
+  sinAmpDial:redraw()
+  
   screen.move(5, 10);
   screen.text('Release')
-  screen.move(50, 30)
+  screen.move(50, 10);
+  screen.text('Saw')
+  screen.move(85, 10);
+  screen.text('Sin')
+  
+  screen.move(20, 60)
   screen.text(lastFreq);
+  
   screen.update();
 end
 
