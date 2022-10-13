@@ -19,7 +19,7 @@ Engine_MidiSaw : CroneEngine {
 			sum = 0;
 			10.do{
 			  temp  = VarSaw.ar(
-			    freq * {Rand(0.99, 1, 1.02)}!2,
+			    freq * {Rand(0.98, 1, 1.02)}!2,
 			    {Rand(0.0, 1.0)}!2,
 			    {ExpRand(0.005, 0.05)}!2
 			  );
