@@ -9,8 +9,9 @@ sawAmp = 0.85
 sinAmp = 0.35
 
 lift = false
-xdir=50
+xpos=50
 altitude=50
+angle = 1
 
 gameOver = false
 
@@ -78,16 +79,18 @@ function init()
 end
 
 function count(stage)
-  if (altitude < 0) then
+  if altitude < 0 or altitude > 50 or xpos < 20 or xpos > 115 then
     gameOver = true
   end
-  
   
   if lift == true then
     if gameOver == false then
       engine.hz(midi_to_hz(43), release, sawAmp * 0.1, sinAmp)
     else
-      engine.hz(midi_to_hz(13), 5, 3, 3)
+      softcut.play(1, 0)
+      softcut.play(2, 0)
+      engine.hz(midi_to_hz(13), 1, 10, 10)
+      softcut.buffer_clear()
       gameOver = true
       redraw()
       counter:stop()
@@ -96,18 +99,31 @@ function count(stage)
   else
     altitude = util.clamp(altitude + 0.4, -10, 50)
   end
+  
+  angle = angle + 20
+  
   redraw()
 end
 
-function key(n,z)
-  print(n .. ' ' .. z)
-  if n == 1 and z == 1 then
-    lift = true
-  elseif n == 1 then
-    lift = false
-  end
-  if n == 2 then
+function reset()
+  softcut.play(1, 1)
+  softcut.play(2, 1)
+  lift = false
+  xpos=50
+  altitude=50
+end
 
+function key(n,z)
+  if gameOver == true and n == 3 then
+    gameOver = false
+    counter:start()
+    reset()
+    redraw()
+  end
+  if n == 2 and z == 1 then
+    lift = true
+  elseif n == 2 then
+    lift = false
   end
 end
 
@@ -115,7 +131,7 @@ function enc(n, delta)
   if n == 1 then
     
   elseif n == 2 then
-    xdir = xdir + delta * 0.4
+    xpos = xpos + delta * 0.4
   elseif n == 3 then
     sinAmpDial:set_value_delta(delta * 0.05)
     sinAmp = sinAmpDial.value
@@ -150,8 +166,27 @@ function redraw()
   screen.fill()
   
   if gameOver == false then
-    screen.rect(xdir, altitude, 10, 10)
-    screen.arc(xdir + 5, altitude - 15, 10, 90, 170)
+    --Body
+    screen.rect(xpos, altitude, 10, 10)
+    
+    -- Tail
+    screen.move_rel(0, 5)
+    screen.line_rel(-15, 0)
+    screen.stroke()
+    
+    -- Rear Rotor
+    screen.move(xpos - 25, altitude + 5)
+    screen.font_size(3)
+    screen.text_rotate(xpos - 15, altitude + 5, '``heli``', angle)
+    screen.text_rotate(xpos - 15, altitude + 5, '``heli``', angle + 180)
+    
+    -- Legs
+    screen.move(xpos + 3, altitude + 10)
+    screen.line_rel(-3, 3)
+    
+    screen.move(xpos + 7, altitude + 10)
+    screen.line_rel(3, 3)
+    screen.stroke()
   else
     screen.font_size(20)
     screen.move(10, 50)
