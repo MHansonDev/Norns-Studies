@@ -12,6 +12,7 @@ lift = false
 xpos=50
 altitude=50
 angle = 1
+liftOff = false
 
 gameOver = false
 
@@ -109,6 +110,7 @@ function reset()
   softcut.play(1, 1)
   softcut.play(2, 1)
   lift = false
+  liftOff = false
   xpos=50
   altitude=50
 end
@@ -121,6 +123,7 @@ function key(n,z)
     redraw()
   end
   if n == 2 and z == 1 then
+    liftOff = true
     lift = true
   elseif n == 2 then
     lift = false
@@ -166,6 +169,7 @@ function redraw()
   screen.fill()
   
   if gameOver == false then
+    
     --Body
     screen.rect(xpos, altitude, 10, 10)
     
@@ -187,6 +191,16 @@ function redraw()
     screen.move(xpos + 7, altitude + 10)
     screen.line_rel(3, 3)
     screen.stroke()
+    
+    --Directions
+    if liftOff == false then
+      screen.font_size(10)
+      screen.font_face(3)
+      screen.move(20, 10)
+      screen.text('K2: Liftoff')
+      screen.move(20, 30)
+      screen.text('Avoid the edge')
+    end
   else
     screen.font_size(20)
     screen.move(10, 50)
