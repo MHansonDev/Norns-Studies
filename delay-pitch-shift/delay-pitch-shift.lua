@@ -1,5 +1,4 @@
 -- LFO Delay Study
--- LFO values effect Pan & Rate params
 engine.name = 'PitchShift'
 local Formatters = require "formatters"
 local ControlSpec = require "controlspec"
