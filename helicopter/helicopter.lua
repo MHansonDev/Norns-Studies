@@ -14,6 +14,8 @@ altitude=50
 angle = 1
 liftOff = false
 
+success = false
+succIndex = 1;
 gameOver = false
 
 function init()
@@ -84,21 +86,41 @@ function count(stage)
     gameOver = true
   end
   
+  if gameOver == true then
+    softcut.play(1, 0)
+    softcut.play(2, 0)
+    engine.hz(midi_to_hz(10), 1, 100, 100)
+    softcut.buffer_clear()
+    gameOver = true
+    redraw()
+    counter:stop()
+  elseif success == true then
+    softcut.play(1, 0)
+    softcut.play(2, 0)
+    softcut.buffer_clear()
+    
+    succCount = metro.init()
+    succCount.time = 1/6
+    succCount.count = -1
+    succCount.event = startSuccSong
+    succCount:start()
+    counter:stop()
+  end
+  
   if lift == true then
-    if gameOver == false then
       engine.hz(midi_to_hz(43), release, sawAmp * 0.1, sinAmp)
-    else
-      softcut.play(1, 0)
-      softcut.play(2, 0)
-      engine.hz(midi_to_hz(13), 1, 10, 10)
-      softcut.buffer_clear()
-      gameOver = true
-      redraw()
-      counter:stop()
+    
+    -- Check position relative to platform
+    if altitude < 13 or altitude > 23 or xpos < 69 then
+      print('altitude: ' .. altitude)
+      altitude = util.clamp(altitude - 0.4, -10, 50)
     end
-    altitude = util.clamp(altitude - 0.4, -10, 50)
   else
-    altitude = util.clamp(altitude + 0.4, -10, 50)
+    if xpos > 75 and altitude >= 7 and altitude <= 7.5 then
+      success = true
+    elseif altitude < 13 or altitude > 23 or xpos < 68 then
+      altitude = util.clamp(altitude + 0.4, -10, 50)
+    end
   end
   
   angle = angle + 20
@@ -116,8 +138,10 @@ function reset()
 end
 
 function key(n,z)
-  if gameOver == true and n == 3 then
+  if (gameOver == true or success == true) and n == 3 then
     gameOver = false
+    success = false
+    succCount.stop()
     counter:start()
     reset()
     redraw()
@@ -130,11 +154,25 @@ function key(n,z)
   end
 end
 
+function startSuccSong()
+  local notes = { 100, 100, 100, 124, 100, 124, 148, 124, 148, 196, 148, 196, 392 }
+  
+  audio.rev_off()
+  if succIndex > 13 then
+  else
+    engine.hz(notes[succIndex], 0.2, 1, 1)
+    succIndex = succIndex + 1
+  end
+end
+
 function enc(n, delta)
   if n == 1 then
-    
+    --noaction
   elseif n == 2 then
-    xpos = xpos + delta * 0.4
+    print (delta)
+    if xpos < 68 or delta < 0 or altitude < 13 or altitude > 23 then
+      xpos = xpos + delta * 0.4
+    end
   elseif n == 3 then
     sinAmpDial:set_value_delta(delta * 0.05)
     sinAmp = sinAmpDial.value
@@ -168,7 +206,7 @@ function redraw()
   screen.clear()
   screen.fill()
   
-  if gameOver == false then
+  if gameOver == false and success == false then
     
     --Body
     screen.rect(xpos, altitude, 10, 10)
@@ -196,16 +234,37 @@ function redraw()
     if liftOff == false then
       screen.font_size(10)
       screen.font_face(3)
-      screen.move(20, 10)
+      screen.move(10, 15)
       screen.text('K2: Liftoff')
-      screen.move(20, 30)
-      screen.text('Avoid the edge')
+      screen.move(10, 30)
+      screen.text('Avoid the edges')
+      screen.move(10, 45)
+      screen.text('Land on the platform')
     end
-  else
+    
+    -- Border
+    screen.move(1, 70)
+    screen.line(1, 1)
+    screen.line_rel(120, 0)
+    screen.line_rel(0, 70)
+    screen.stroke()
+    
+    -- Platform
+    screen.move(80, 20)
+    screen.line_rel(25, 0)
+    screen.move(80, 21)
+    screen.line_rel(25, 0)
+    screen.stroke()
+  elseif gameOver == true then
     screen.font_size(20)
     screen.move(10, 50)
     screen.text('GAME OVER')
+  elseif success == true then
+    screen.font_size(20)
+    screen.move(10, 50)
+    screen.text('Success')
   end
+
   
   screen.update();
 end
