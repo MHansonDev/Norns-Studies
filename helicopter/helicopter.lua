@@ -141,7 +141,6 @@ function key(n,z)
   if (gameOver == true or success == true) and n == 3 then
     gameOver = false
     success = false
-    succCount.stop()
     counter:start()
     reset()
     redraw()
