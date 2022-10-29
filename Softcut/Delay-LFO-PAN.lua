@@ -3,9 +3,12 @@
 local Formatters = require "formatters"
 local ControlSpec = require "controlspec"
 
-rate = 1.0
-rec = 0.44
+m = midi.connect()
+
+rate = 2
+rec = 0.9
 pre = 0.5
+recording = 0
 
 local SCREEN_FRAMERATE = 15
 local screen_dirty = true
@@ -47,10 +50,10 @@ local function lfo_update()
     end
     
     softcut.pan(1, lfo_values[1] * 0.01)
-    softcut.rate(1, 44 + (lfo_values[1] * 0.002))
+    softcut.pan(2, lfo_values[1] * -0.01);
+    --softcut.fade_time(1, rate + (lfo_values[1] * 0.002))
     if lfo_values[2] then
-      softcut.pan(2, lfo_values[2] * -0.01);
-      softcut.rate(2, 32 + (lfo_values[2] * -0.003))
+      --softcut.fade_time(2, rate + (lfo_values[2] * -0.003))
     end
   end
 end
@@ -117,13 +120,12 @@ function init()
   }
   
 
-  audio.rev_on()
+  audio.rev_off()
   audio.level_monitor_rev(0.3)
 
   audio.level_cut(1.0)
   audio.level_adc_cut(1)
   audio.level_eng_cut(1)
-  
   
   -- Voice 1
   softcut.level(1,1.0)
@@ -131,14 +133,15 @@ function init()
 
   softcut.play(1, 1)
   softcut.pan(1, -1)
-  softcut.rate(1, 44)
+  softcut.rate(1, rate)
   softcut.loop_start(1, 0)
   softcut.loop_end(1, 1)
   softcut.loop(1, 1)
-  softcut.fade_time(1, 32)
-  softcut.rec(1, 1)
-  softcut.rec_level(1, 0.3)
-  softcut.pre_level(1, 0.3) --[[ 0_0 ]]--
+  softcut.fade_time(1, 1)
+  softcut.rec(1, recording)
+  softcut.rec_level(1, rec)
+  softcut.pre_level(1, pre)
+  softcut.rate_slew_time(2, 0.3)
   softcut.position(1, 0)
   softcut.enable(1, 1)
   
@@ -155,14 +158,15 @@ function init()
   
   softcut.play(2, 1)
   softcut.pan(2, 1)
-  softcut.rate(2, 32)
+  softcut.rate(2, rate)
   softcut.loop_start(2, 0)
   softcut.loop_end(2, 1)
   softcut.loop(2, 1)
-  softcut.fade_time(2, 32)
-  softcut.rec(2, 1)
-  softcut.rec_level(2, 0.3)
-  softcut.pre_level(2, 0.4) --[[ 0_0 ]]--
+  softcut.fade_time(2, 1)
+  softcut.rec(2, recording)
+  softcut.rec_level(2, rec)
+  softcut.pre_level(2, pre)
+  softcut.rate_slew_time(2, 0.3)
   softcut.position(2, 0)
   softcut.enable(2, 1)
   
@@ -183,12 +187,53 @@ function init()
   metro.init(screen_update, 1 / SCREEN_FRAMERATE):start()
 end
 
+m.event = function(data)
+  local d = midi.to_msg(data)
+  if d.type == 'note_on' then
+    print(d.type)
+    if recording == 1 then
+      print('stopREC')
+      softcut.fade_time(1, 0.1)
+      softcut.fade_time(2, 0.1)
+      softcut.rec(1, 0)
+      softcut.rec(2, 0)
+      softcut.rec_level(1, 0.3)
+      softcut.rec_level(2, 0.3)
+      recording = 0
+    else
+      print('startREC')
+      softcut.rec(1, 1)
+      softcut.rec(2, 1)
+      softcut.rec_level(1, 0.8)
+      softcut.rec_level(2, 0.8)
+      softcut.fade_time(1, 1)
+      softcut.fade_time(2, 1)
+      
+      clock.run(strangeTame)
+      
+      recording = 1
+    end
+  end
+end
+
+function strangeTame()
+  for i=1,2 do
+    clock.sync(3)
+    softcut.rate(1, rate * (i / 12))
+    softcut.rate(2, rate * (i / 6))
+    if i == 2.5 then
+      softcut.rec(1, 0)
+      softcut.rec(2, 0)
+    end
+  end
+end
+
 function enc(n,d)
   if n==1 then
     print('pre: ' .. rate)
     rate = util.clamp(rate+d/100,-4,4)
-    softcut.rate(1, (44 * rate));
-    softcut.rate(2, (32 * rate));
+    softcut.rate(1, rate);
+    softcut.rate(2, rate);
     print(rate);
   elseif n==2 then
     print('pre rec: ' .. rate)

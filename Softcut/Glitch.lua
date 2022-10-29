@@ -1,8 +1,9 @@
 
 --engine.name = 'PitchShift'
+local tab = require 'tabutil'
 
-rate =4
-rec = 0.6
+rate = 10
+rec = 0.8
 pre = 1
 
 m = midi.connect()
@@ -13,13 +14,14 @@ function init()
   audio.level_monitor_rev(0.8)
 
   -- configure the delay
-  audio.level_cut(1.0)
+  audio.level_cut(1, 0)
+  
   audio.level_adc_cut(1)
   audio.level_eng_cut(1)
   
   
   -- Voice 1
-  softcut.level(1,1.0)
+  softcut.level(1, 1.0)
   softcut.level_input_cut(1, 1, 1)
 
   softcut.play(1, 1)
@@ -46,7 +48,7 @@ function init()
   
   
   -- Voice 2
-  softcut.level(2,1.0)
+  softcut.level(2, 1.0)
   softcut.level_input_cut(1, 2, 1)
   
   softcut.play(2, 1)
@@ -55,7 +57,7 @@ function init()
   softcut.loop_start(2, 0)
   softcut.loop_end(2, 1)
   softcut.loop(2, 1)
-  softcut.fade_time(2, 1)
+  softcut.fade_time(2, 2)
   softcut.rec(2, 1)
   softcut.rec_level(2, rec)
   softcut.pre_level(2, pre) --[[ 0_0 ]]--
@@ -111,8 +113,16 @@ function key(n,z)
 end
 
 m.event = function(data)
-  print('tick')
-  softcut.buffer_clear()
+  local d = midi.to_msg(data)
+  tab.print(d)
+  if d.type ~= 'clock' then
+    print('bufferClear')
+    softcut.rec(0, 0)
+    softcut.rec(1, 0)
+    softcut.rec(0, 1)
+    softcut.rec(1, 1)
+    softcut.buffer_clear()
+  end
 end
 
 function redraw()
